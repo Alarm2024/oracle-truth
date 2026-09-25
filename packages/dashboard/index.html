@@ -1,36 +1,87 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="midnight">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Oracle Truth — Pre-Trade Safety Gate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b0f14;
-      --panel: #141b24;
-      --border: #243044;
-      --text: #e8eef7;
-      --muted: #8fa3bf;
-      --allow: #22c55e;
+      --bg: #0b1214;
+      --panel: #121a19;
+      --border: rgba(46,230,199,.22);
+      --text: #e8fbf6;
+      --muted: #9ab3ad;
+      --allow: #2ee6c7;
       --refuse: #ef4444;
-      --accent: #38bdf8;
+      --accent: #2ee6c7;
+      --serif: "Instrument Serif", Georgia, serif;
+      --sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-family: var(--sans);
       background: var(--bg);
       color: var(--text);
-      line-height: 1.5;
+      line-height: 1.55;
     }
-    header {
-      padding: 1.5rem 2rem;
+    .topbar {
+      display: flex; align-items: center; gap: 8px;
+      position: sticky; top: 0; z-index: 50;
+      padding: 10px 16px;
+      background: rgba(11,18,20,.88);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, #101722, var(--bg));
     }
-    header h1 { margin: 0 0 .25rem; font-size: 1.5rem; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; }
+    .omark {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: grid; place-items: center;
+      font: 700 15px var(--sans); color: #04110a;
+      background: linear-gradient(135deg,#7ee8d4,#8a7cff);
+    }
+    .oword {
+      font-weight: 600; font-size: 13px; letter-spacing: .18em;
+      background: linear-gradient(135deg,#d8fff4 0%,#6fe0c4 44%,#9b7dff 100%);
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent; -webkit-text-fill-color: transparent;
+    }
+    .header-right { margin-left: auto; }
+    .theme-wrap { position: relative; }
+    .theme-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 10px; font: 600 11px var(--sans); cursor: pointer;
+    }
+    .theme-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ee6c7; }
+    .theme-panel {
+      display: none; position: absolute; right: 0; top: calc(100% + 8px);
+      min-width: 200px; background: #16181d; border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px; padding: 10px; z-index: 80;
+    }
+    .theme-wrap.open .theme-panel { display: block; }
+    .theme-panel p { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #8b93a0; margin: 0 8px 8px; }
+    .theme-item {
+      display: flex; align-items: center; gap: 10px; width: 100%; border: 0;
+      background: transparent; color: #e8eef2; padding: 10px; border-radius: 12px;
+      font: 600 14px var(--sans); cursor: pointer; text-align: left;
+    }
+    .theme-item.on { background: #14302c; color: #2ee6c7; }
+    .theme-item i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+    .theme-item .ck { margin-left: auto; opacity: 0; }
+    .theme-item.on .ck { opacity: 1; }
+    header {
+      padding: 1.5rem 2rem 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header h1 { margin: 0 0 .25rem; font-family: var(--serif); font-size: clamp(2rem,5vw,2.6rem); font-weight: 400; }
     header p { margin: 0; color: var(--muted); }
-    main { padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    main { padding: 0 2rem 2.5rem; max-width: 1200px; margin: 0 auto; }
     .controls {
       display: flex;
       gap: .75rem;
@@ -41,11 +92,13 @@
       background: var(--panel);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 999px;
       padding: .5rem 1rem;
       cursor: pointer;
+      font-family: var(--sans);
     }
     button:hover { border-color: var(--accent); }
+    #refresh-all { background: var(--accent); color: #04110a; border: 0; font-weight: 600; }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -54,10 +107,10 @@
     .card {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 1rem;
     }
-    .card h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+    .card h2 { margin: 0 0 .5rem; font-size: 1.15rem; font-family: var(--serif); font-weight: 400; }
     .badge {
       display: inline-block;
       padding: .2rem .6rem;
@@ -66,28 +119,35 @@
       font-weight: 700;
       text-transform: uppercase;
     }
-    .badge.allow { background: rgba(34,197,94,.15); color: var(--allow); }
+    .badge.allow { background: rgba(46,230,199,.15); color: var(--allow); }
     .badge.refuse { background: rgba(239,68,68,.15); color: var(--refuse); }
     .muted { color: var(--muted); font-size: .875rem; }
     table { width: 100%; border-collapse: collapse; font-size: .875rem; }
     th, td { text-align: left; padding: .35rem 0; border-bottom: 1px solid var(--border); }
     pre {
-      background: #0a0e13;
+      background: #05080a;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       padding: .75rem;
       overflow: auto;
       font-size: .75rem;
       max-height: 240px;
     }
-    .section-title { margin: 2rem 0 1rem; font-size: 1.25rem; }
+    .section-title { margin: 2rem 0 1rem; font-size: 1.35rem; font-family: var(--serif); font-weight: 400; }
     .error { color: var(--refuse); }
   </style>
 </head>
 <body>
+  <div class="topbar">
+    <a class="brand" href="./">
+      <span class="omark">O</span>
+      <span class="oword">ORACLE</span>
+    </a>
+    <div class="header-right"></div>
+  </div>
   <header>
     <h1>Oracle Truth</h1>
-    <p>Pre-trade safety gate for Solana perps &amp; prediction markets — read-only, no keys, no trading.</p>
+    <p>Pre-trade safety gate for Solana perps & prediction markets — read-only, no keys, no trading.</p>
   </header>
   <main>
     <div class="controls">
@@ -100,9 +160,9 @@
         <option value="venues-disagree">Fixture: venues-disagree</option>
         <option value="rpc-behind">Fixture: rpc-behind</option>
       </select>
-      <button id="resolve-btn">Check Prediction Resolution (SOL &gt; strike)</button>
+      <button id="resolve-btn">Check Prediction Resolution (SOL > strike)</button>
       <input id="strike-input" type="number" value="140" min="0" step="0.01"
-        style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem;width:120px;" />
+        style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:999px;padding:.5rem;width:120px;" />
     </div>
 
     <div id="status" class="muted">Loading…</div>
@@ -111,6 +171,70 @@
     <h2 class="section-title">Prediction Resolution Evidence</h2>
     <div id="resolution" class="card"><p class="muted">Click "Check Prediction Resolution" to fetch live source evidence.</p></div>
   </main>
+
+  <script>
+    (function(){
+      var KEY='house-theme';
+      var THEMES={
+        midnight:{bg:'#0b1214',ink:'#e8fbf6',dim:'#9ab3ad',accent:'#2ee6c7',card:'#121a19',line:'rgba(46,230,199,.22)',dot:'#2ee6c7'},
+        dawn:{bg:'#f4f1ea',ink:'#1a1814',dim:'#5c574e',accent:'#0f766e',card:'#fffaf3',line:'rgba(15,118,110,.22)',dot:'#e8efe8'},
+        nord:{bg:'#2e3440',ink:'#eceff4',dim:'#88c0d0',accent:'#88c0d0',card:'#3b4252',line:'rgba(136,192,208,.28)',dot:'#88c0d0'},
+        solarized:{bg:'#002b36',ink:'#eee8d5',dim:'#93a1a1',accent:'#b58900',card:'#073642',line:'rgba(181,137,0,.28)',dot:'#b58900'},
+        dracula:{bg:'#282a36',ink:'#f8f8f2',dim:'#bd93f9',accent:'#50fa7b',card:'#21222c',line:'rgba(80,250,123,.28)',dot:'#bd93f9'},
+        ocean:{bg:'#0b1c24',ink:'#d8f3ff',dim:'#7fadb8',accent:'#2ec4b6',card:'#12262e',line:'rgba(46,196,182,.28)',dot:'#2ec4b6'}
+      };
+      var LABELS={midnight:'Midnight',dawn:'Dawn',nord:'Nord',solarized:'Solarized',dracula:'Dracula',ocean:'Ocean'};
+      var ORDER=['midnight','dawn','nord','solarized','dracula','ocean'];
+      function apply(name){
+        if(!(name in THEMES)) name='midnight';
+        var t=THEMES[name];
+        var r=document.documentElement;
+        r.setAttribute('data-theme',name);
+        r.style.setProperty('--bg',t.bg);
+        r.style.setProperty('--text',t.ink);
+        r.style.setProperty('--muted',t.dim);
+        r.style.setProperty('--accent',t.accent);
+        r.style.setProperty('--allow',t.accent);
+        r.style.setProperty('--panel',t.card);
+        r.style.setProperty('--border',t.line);
+        if(document.body){document.body.style.background=t.bg;document.body.style.color=t.ink;}
+        try{localStorage.setItem(KEY,name);}catch(e){}
+        document.querySelectorAll('[data-theme-item]').forEach(function(el){
+          el.classList.toggle('on', el.getAttribute('data-theme-item')===name);
+        });
+        var cur=document.getElementById('themeCur');
+        if(cur) cur.textContent=LABELS[name];
+      }
+      function mount(){
+        if(document.getElementById('themeMenu')) return;
+        var wrap=document.createElement('div');
+        wrap.className='theme-wrap';
+        wrap.id='themeMenu';
+        wrap.innerHTML='<button type="button" class="theme-btn" id="themeOpen"><i class="theme-dot"></i><span id="themeCur">Midnight</span></button>';
+        var panel=document.createElement('div');
+        panel.className='theme-panel';
+        panel.innerHTML='<p>Choose theme</p>';
+        ORDER.forEach(function(k){
+          var b=document.createElement('button');
+          b.type='button';
+          b.className='theme-item';
+          b.setAttribute('data-theme-item',k);
+          b.innerHTML='<i style="background:'+THEMES[k].dot+'"></i><span>'+LABELS[k]+'</span><span class="ck">\u2713</span>';
+          b.onclick=function(){apply(k);wrap.classList.remove('open');};
+          panel.appendChild(b);
+        });
+        wrap.appendChild(panel);
+        var host=document.querySelector('.header-right');
+        if(host) host.appendChild(wrap);
+        document.getElementById('themeOpen').onclick=function(e){e.stopPropagation();wrap.classList.toggle('open');};
+        document.addEventListener('click',function(){wrap.classList.remove('open');});
+      }
+      var start='midnight';
+      try{start=localStorage.getItem(KEY)||'midnight';}catch(e){}
+      if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){mount();apply(start);});}
+      else{mount();apply(start);}
+    })();
+  </script>
 
   <script>
     const ASSETS = ["SOL", "BTC", "ETH"];
