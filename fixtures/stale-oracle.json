@@ -1,0 +1,34 @@
+{
+  "asset": "SOL",
+  "description": "Oracle update is 120 seconds old — exceeds 30s threshold",
+  "input": {
+    "asset": "SOL",
+    "venuePrices": [
+      { "venue": "binance", "price": 145.5, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "okx", "price": 145.6, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "kraken", "price": 145.4, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "coinbase", "price": 145.55, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "jupiter", "price": 145.52, "timestamp": "2026-09-25T12:00:00.000Z" }
+    ],
+    "perpSnapshots": [
+      {
+        "source": "drift",
+        "markPrice": 145.58,
+        "oraclePrice": 145.57,
+        "oracleUpdatedAt": "2026-09-25T11:58:00.000Z",
+        "oracleAgeMs": 120000,
+        "fetchedAt": "2026-09-25T12:00:00.000Z"
+      }
+    ],
+    "rpc": {
+      "currentSlot": 300000000,
+      "oracleSlot": 299999950,
+      "slotLag": 50,
+      "fetchedAt": "2026-09-25T12:00:00.000Z"
+    }
+  },
+  "expected": {
+    "decision": "refuse",
+    "reasonCode": "ORACLE_STALE"
+  }
+}

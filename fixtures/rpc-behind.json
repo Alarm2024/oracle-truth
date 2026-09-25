@@ -1,0 +1,34 @@
+{
+  "asset": "SOL",
+  "description": "RPC slot lag exceeds 150 slots",
+  "input": {
+    "asset": "SOL",
+    "venuePrices": [
+      { "venue": "binance", "price": 145.5, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "okx", "price": 145.6, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "kraken", "price": 145.4, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "coinbase", "price": 145.55, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "jupiter", "price": 145.52, "timestamp": "2026-09-25T12:00:00.000Z" }
+    ],
+    "perpSnapshots": [
+      {
+        "source": "drift",
+        "markPrice": 145.55,
+        "oraclePrice": 145.54,
+        "oracleUpdatedAt": "2026-09-25T11:59:55.000Z",
+        "oracleAgeMs": 5000,
+        "fetchedAt": "2026-09-25T12:00:00.000Z"
+      }
+    ],
+    "rpc": {
+      "currentSlot": 300000300,
+      "oracleSlot": 300000000,
+      "slotLag": 300,
+      "fetchedAt": "2026-09-25T12:00:00.000Z"
+    }
+  },
+  "expected": {
+    "decision": "refuse",
+    "reasonCode": "RPC_BEHIND"
+  }
+}

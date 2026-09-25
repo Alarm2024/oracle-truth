@@ -1,0 +1,34 @@
+{
+  "asset": "SOL",
+  "description": "Mark price diverges 200 bps from spot median — exceeds 50 bps threshold",
+  "input": {
+    "asset": "SOL",
+    "venuePrices": [
+      { "venue": "binance", "price": 100.0, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "okx", "price": 100.1, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "kraken", "price": 99.9, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "coinbase", "price": 100.05, "timestamp": "2026-09-25T12:00:00.000Z" },
+      { "venue": "jupiter", "price": 100.02, "timestamp": "2026-09-25T12:00:00.000Z" }
+    ],
+    "perpSnapshots": [
+      {
+        "source": "drift",
+        "markPrice": 102.0,
+        "oraclePrice": 102.0,
+        "oracleUpdatedAt": "2026-09-25T11:59:55.000Z",
+        "oracleAgeMs": 5000,
+        "fetchedAt": "2026-09-25T12:00:00.000Z"
+      }
+    ],
+    "rpc": {
+      "currentSlot": 300000000,
+      "oracleSlot": 299999980,
+      "slotLag": 20,
+      "fetchedAt": "2026-09-25T12:00:00.000Z"
+    }
+  },
+  "expected": {
+    "decision": "refuse",
+    "reasonCode": "DIVERGED_X_BPS"
+  }
+}

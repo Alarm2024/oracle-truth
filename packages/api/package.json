@@ -1,0 +1,20 @@
+{
+  "name": "@oracle-truth/api",
+  "version": "0.1.0",
+  "description": "Oracle Truth HTTP API and dashboard server",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@oracle-truth/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle Truth — Pre-Trade Safety Gate</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #141b24;
+      --border: #243044;
+      --text: #e8eef7;
+      --muted: #8fa3bf;
+      --allow: #22c55e;
+      --refuse: #ef4444;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #101722, var(--bg));
+    }
+    header h1 { margin: 0 0 .25rem; font-size: 1.5rem; }
+    header p { margin: 0; color: var(--muted); }
+    main { padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .controls {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    button, select {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .5rem 1rem;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .card h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+    .badge {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge.allow { background: rgba(34,197,94,.15); color: var(--allow); }
+    .badge.refuse { background: rgba(239,68,68,.15); color: var(--refuse); }
+    .muted { color: var(--muted); font-size: .875rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th, td { text-align: left; padding: .35rem 0; border-bottom: 1px solid var(--border); }
+    pre {
+      background: #0a0e13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem;
+      overflow: auto;
+      font-size: .75rem;
+      max-height: 240px;
+    }
+    .section-title { margin: 2rem 0 1rem; font-size: 1.25rem; }
+    .error { color: var(--refuse); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Oracle Truth</h1>
+    <p>Pre-trade safety gate for Solana perps &amp; prediction markets — read-only, no keys, no trading.</p>
+  </header>
+  <main>
+    <div class="controls">
+      <button id="refresh-all">Refresh All Assets</button>
+      <select id="fixture-select">
+        <option value="">Live data</option>
+        <option value="allow-clean">Fixture: allow-clean</option>
+        <option value="stale-oracle">Fixture: stale-oracle</option>
+        <option value="diverged-oracle">Fixture: diverged-oracle</option>
+        <option value="venues-disagree">Fixture: venues-disagree</option>
+        <option value="rpc-behind">Fixture: rpc-behind</option>
+      </select>
+      <button id="resolve-btn">Check Prediction Resolution (SOL &gt; strike)</button>
+      <input id="strike-input" type="number" value="140" min="0" step="0.01"
+        style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem;width:120px;" />
+    </div>
+
+    <div id="status" class="muted">Loading…</div>
+    <div id="gate-grid" class="grid"></div>
+
+    <h2 class="section-title">Prediction Resolution Evidence</h2>
+    <div id="resolution" class="card"><p class="muted">Click "Check Prediction Resolution" to fetch live source evidence.</p></div>
+  </main>
+
+  <script>
+    const ASSETS = ["SOL", "BTC", "ETH"];
+    const grid = document.getElementById("gate-grid");
+    const status = document.getElementById("status");
+    const fixtureSelect = document.getElementById("fixture-select");
+
+    function fmt(val) {
+      if (val === "UNKNOWN" || val === undefined || val === null) return "UNKNOWN";
+      if (typeof val === "number") return val.toLocaleString(undefined, { maximumFractionDigits: 4 });
+      return String(val);
+    }
+
+    function renderCard(asset, result) {
+      const decision = result.decision;
+      const ev = result.evidence || {};
+      const reason = result.reasonCode || "—";
+      return `
+        <article class="card">
+          <h2>${asset} <span class="badge ${decision}">${decision}</span></h2>
+          <p class="muted">Reason: <strong>${reason}</strong></p>
+          <table>
+            <tr><th>Spot median</th><td>${fmt(ev.spotReference)}</td></tr>
+            <tr><th>Mark</th><td>${fmt(ev.markPrice)}</td></tr>
+            <tr><th>Oracle</th><td>${fmt(ev.oraclePrice)}</td></tr>
+            <tr><th>Divergence</th><td>${fmt(ev.divergenceBps)} bps</td></tr>
+            <tr><th>Oracle age</th><td>${fmt(ev.oracleAgeMs)} ms</td></tr>
+            <tr><th>Venue spread</th><td>${fmt(ev.venueSpreadBps)} bps</td></tr>
+            <tr><th>RPC slot lag</th><td>${fmt(ev.rpc?.slotLag)}</td></tr>
+          </table>
+          <details style="margin-top:.75rem;">
+            <summary class="muted">Venue prices</summary>
+            <table>
+              ${(ev.venuePrices || []).map(v => `<tr><td>${v.venue}</td><td>${fmt(v.price)}</td></tr>`).join("")}
+            </table>
+          </details>
+          ${decision === "refuse" ? `<pre>${JSON.stringify(ev, null, 2)}</pre>` : ""}
+        </article>`;
+    }
+
+    async function fetchGate(asset) {
+      const fixture = fixtureSelect.value;
+      const qs = fixture ? `?mode=fixture&fixture=${fixture}` : "";
+      const res = await fetch(`/api/gate/${asset}${qs}`);
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function refreshAll() {
+      status.textContent = "Fetching gate status…";
+      grid.innerHTML = "";
+      try {
+        const results = await Promise.all(ASSETS.map(async (a) => [a, await fetchGate(a)]));
+        grid.innerHTML = results.map(([a, r]) => renderCard(a, r)).join("");
+        status.textContent = `Updated ${new Date().toLocaleTimeString()} — ${fixtureSelect.value || "live"} mode`;
+      } catch (e) {
+        status.innerHTML = `<span class="error">Error: ${e.message}</span>`;
+      }
+    }
+
+    async function checkResolution() {
+      const strike = document.getElementById("strike-input").value;
+      const el = document.getElementById("resolution");
+      el.innerHTML = "<p class='muted'>Fetching resolution evidence…</p>";
+      try {
+        const res = await fetch(`/api/prediction/resolve?asset=SOL&strike=${strike}`);
+        const data = await res.json();
+        el.innerHTML = `
+          <h2>Resolution: ${data.canResolve ? data.resolveDirection?.toUpperCase() : "UNRESOLVED"}</h2>
+          <p>${data.question}</p>
+          <p class="muted">Median: ${fmt(data.medianPrice)} | Consensus spread: ${fmt(data.consensusBps)} bps</p>
+          <table>
+            <tr><th>Source</th><th>Price</th><th>Hash</th></tr>
+            ${(data.sources || []).map(s => `<tr><td>${s.source}</td><td>${fmt(s.price)}</td><td style="font-size:.7rem">${s.rawHash.slice(0,16)}…</td></tr>`).join("")}
+          </table>
+          <pre>${JSON.stringify(data, null, 2)}</pre>`;
+      } catch (e) {
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    }
+
+    document.getElementById("refresh-all").addEventListener("click", refreshAll);
+    document.getElementById("resolve-btn").addEventListener("click", checkResolution);
+    refreshAll();
+  </script>
+</body>
+</html>
