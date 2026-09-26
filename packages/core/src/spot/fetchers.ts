@@ -27,6 +27,11 @@ const VENUE_SYMBOLS: Record<
   },
 };
 
+/** A usable quote is a finite number strictly above zero. */
+function usablePrice(price: number): number | "UNKNOWN" {
+  return Number.isFinite(price) && price > 0 ? price : "UNKNOWN";
+}
+
 async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T | "UNKNOWN"> {
   try {
     const controller = new AbortController();
@@ -51,7 +56,7 @@ export async function fetchBinanceSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = parseFloat(data.price);
   return {
     venue: "binance",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -67,7 +72,7 @@ export async function fetchOkxSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = parseFloat(data.data[0].last);
   return {
     venue: "okx",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -84,7 +89,7 @@ export async function fetchKrakenSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = entry?.c?.[0] ? parseFloat(entry.c[0]) : NaN;
   return {
     venue: "kraken",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -100,7 +105,7 @@ export async function fetchCoinbaseSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = data.price ? parseFloat(data.price) : NaN;
   return {
     venue: "coinbase",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -110,16 +115,17 @@ export async function fetchJupiterSpot(asset: PerpAsset): Promise<VenuePrice> {
   if (mint === "UNKNOWN") {
     return { venue: "jupiter", price: "UNKNOWN", error: "no jupiter mint for asset" };
   }
-  const data = await fetchJson<{ data?: Record<string, { price?: number }> }>(
-    `https://api.jup.ag/price/v2?ids=${mint}`
+  // Price API v3: response is keyed by mint with usdPrice (v2 deprecated)
+  const data = await fetchJson<Record<string, { usdPrice?: number }>>(
+    `https://api.jup.ag/price/v3?ids=${mint}`
   );
-  if (data === "UNKNOWN" || !data.data?.[mint]) {
+  if (data === "UNKNOWN" || !data[mint]) {
     return { venue: "jupiter", price: "UNKNOWN", error: "fetch failed" };
   }
-  const price = data.data[mint].price;
+  const price = data[mint].usdPrice;
   return {
     venue: "jupiter",
-    price: typeof price === "number" && Number.isFinite(price) ? price : "UNKNOWN",
+    price: typeof price === "number" ? usablePrice(price) : "UNKNOWN",
     timestamp: new Date().toISOString(),
   };
 }

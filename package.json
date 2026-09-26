@@ -16,5 +16,11 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@oracle-truth/core": "*"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.5.0"
   }
 }
