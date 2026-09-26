@@ -1,6 +1,6 @@
 # Oracle Truth
 
-Pre-trade safety gate for Solana perpetuals and prediction markets. Compares on-chain oracle/mark prices against a multi-venue spot reference, measures oracle freshness and RPC lag, and produces auditable allow/refuse decisions with evidence.
+Pre-trade safety gate for Solana perpetuals and prediction markets. Compares on-chain oracle/mark prices against a multi-venue spot reference, measures oracle freshness and RPC lag, and produces checkable allow/refuse decisions with evidence.
 
 **Hackathon project — read-only, no keys, no trading.**
 
@@ -78,7 +78,7 @@ Vercel serves these endpoints:
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/gate/:asset` | Live gate check for SOL, BTC, or ETH. `?mode=fixture&fixture=stale-oracle` replays a seeded fixture |
+| `GET /api/gate/:asset` | Live gate check for SOL, BTC, or ETH. Live checks currently always refuse with DATA_UNKNOWN, because no oracle slot is wired yet (index.ts passes UNKNOWN). `?mode=fixture&fixture=stale-oracle` replays a seeded fixture |
 | `GET /api/prediction/resolve?asset=SOL&strike=140` | Resolution evidence with source hashes |
 
 `strike` must be a plain decimal (`140` or `140.5`). A `time` more than 60 seconds from the server clock is rejected. Unexpected failures return `{"error":"internal error"}`.
@@ -133,7 +133,7 @@ Every **refuse** includes full evidence: prices, ages, sources, timestamps. The 
 For questions like *"SOL above $X at time T"*:
 
 1. Fetch every configured source at resolution time (live) or from fixture input
-2. Store each response with a SHA-256 hash for audit trail
+2. Store each response with a SHA-256 hash for decision record
 3. Report median, consensus spread, and whether sources agree enough to resolve
 
 The live response keeps the requested `resolutionTime` and adds `observedAt`, the time the prices were fetched.
@@ -187,7 +187,7 @@ Public **data APIs** (read-only, no SDK required): Binance, OKX, Kraken, Coinbas
 - **Live API availability** — external venues may rate-limit or fail; failed fetches return `UNKNOWN` and may affect median/consensus calculations
 - **Drift/Jupiter API shapes** — public endpoints may change; mark/oracle scaling assumes documented precision (Drift uses 1e6); verify against live responses
 - **Historical resolution** — live `/api/prediction/resolve` fetches *current* prices and records that moment as `observedAt`. A `time` more than 60 seconds from now is rejected (`only current observations are supported`). Archived time-T resolution is the local fixture POST endpoint
-- **RPC slot lag** — oracle slot from Drift stats may be unavailable; lag stays `UNKNOWN` unless an oracle slot is provided. Unknown lag is `DATA_UNKNOWN`, and the gate refuses
+- **RPC slot lag** — Live checks currently always refuse with DATA_UNKNOWN, because no oracle slot is wired yet (index.ts passes UNKNOWN).
 - **Thresholds** — defaults (30s stale, 50 bps divergence, 150 slot lag, 100 bps venue spread) are configurable in code but not yet exposed via API env vars
 - **Assets** — SOL, BTC, ETH only
 - **Network** — defaults to Solana mainnet-beta public RPC; devnet supported via `SOLANA_RPC_URL`
