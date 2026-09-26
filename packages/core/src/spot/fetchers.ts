@@ -110,13 +110,14 @@ export async function fetchJupiterSpot(asset: PerpAsset): Promise<VenuePrice> {
   if (mint === "UNKNOWN") {
     return { venue: "jupiter", price: "UNKNOWN", error: "no jupiter mint for asset" };
   }
-  const data = await fetchJson<{ data?: Record<string, { price?: number }> }>(
-    `https://api.jup.ag/price/v2?ids=${mint}`
+  // Price API v3: response is keyed by mint with usdPrice (v2 deprecated)
+  const data = await fetchJson<Record<string, { usdPrice?: number }>>(
+    `https://api.jup.ag/price/v3?ids=${mint}`
   );
-  if (data === "UNKNOWN" || !data.data?.[mint]) {
+  if (data === "UNKNOWN" || !data[mint]) {
     return { venue: "jupiter", price: "UNKNOWN", error: "fetch failed" };
   }
-  const price = data.data[mint].price;
+  const price = data[mint].usdPrice;
   return {
     venue: "jupiter",
     price: typeof price === "number" && Number.isFinite(price) ? price : "UNKNOWN",
