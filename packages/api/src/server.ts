@@ -105,6 +105,7 @@ const server = createServer(async (req, res) => {
     if (
       strikeRaw === undefined ||
       !plainStrike.test(strikeRaw) ||
+      !Number.isFinite(Number(strikeRaw)) ||
       !(Number(strikeRaw) > 0)
     ) {
       json(res, 400, { error: "strike required" });
