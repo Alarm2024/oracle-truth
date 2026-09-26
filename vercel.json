@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "regions": ["fra1"],
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace @oracle-truth/core",
+  "outputDirectory": "packages/dashboard",
+  "functions": {
+    "api/gate/[asset].ts": {
+      "includeFiles": "fixtures/**",
+      "maxDuration": 10
+    },
+    "api/prediction/resolve.ts": {
+      "maxDuration": 10
+    }
+  }
+}

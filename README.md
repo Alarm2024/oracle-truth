@@ -16,10 +16,27 @@ npm test
 # Build all TypeScript packages
 npm run build
 
-# Start API + dashboard
+# Start API + dashboard (local Node server)
 npm run dev
 # Open http://localhost:3000
 ```
+
+### Deploy on Vercel (free / Hobby)
+
+No secrets required. Serverless functions run in **fra1** (Frankfurt) so venue APIs that block US IPs still work.
+
+1. Push this repo to GitHub (or connect another Git remote).
+2. In [Vercel](https://vercel.com): **Add New… → Project** and import the repo.
+3. Leave **Root Directory** as `.` (repo root). Framework Preset can stay **Other**.
+4. Build settings are already in `vercel.json`:
+   - Install: `npm install`
+   - Build: `npm run build --workspace @oracle-truth/core`
+   - Output: `packages/dashboard` (static dashboard)
+   - Region: `fra1`
+5. Deploy — do **not** add environment variables.
+6. Open the deployment URL: dashboard at `/`, APIs at `/api/gate/SOL` and `/api/prediction/resolve?asset=SOL&strike=140`.
+
+Local `npm run dev` still serves the same dashboard and routes via the Node HTTP server in `@oracle-truth/api`.
 
 ### Rust client
 
@@ -40,16 +57,18 @@ ORACLE_TRUTH_URL=http://localhost:3000 npx tsx clients/ts/src/example.ts
 
 ```
 oracle-truth/
+├── api/               # Vercel serverless functions (gate + prediction)
 ├── packages/
 │   ├── core/          # Gate logic, spot/perp fetchers, resolution evidence
-│   ├── api/           # HTTP API server (serves dashboard)
-│   └── dashboard/     # Static live dashboard
+│   ├── api/           # Local HTTP API server (npm run dev)
+│   └── dashboard/     # Static live dashboard (Vercel outputDirectory)
 ├── clients/
 │   ├── ts/            # TypeScript client
 │   └── rust/          # Rust client
 ├── fixtures/          # Seeded test scenarios
 ├── docs/
 │   └── demo-script.md # 3-minute demo video script
+├── vercel.json        # fra1 region, static dashboard, function includes
 └── README.md
 ```
 
@@ -98,7 +117,7 @@ Every **refuse** includes full evidence: prices, ages, sources, timestamps.
 
 - **Drift** — public stats API (`mainnet-beta.api.drift.trade`)
 - **Jupiter Perps** — public markets API (`perps-api.jup.ag`)
-- **Spot reference** — median of responding venues: Binance, OKX, Kraken, Coinbase, Jupiter
+- **Spot reference** — median of responding venues: Binance, OKX, Kraken, Coinbase, Jupiter Price API v3 (`api.jup.ag/price/v3`)
 
 ## Prediction markets — resolution evidence
 
@@ -148,7 +167,7 @@ All **new application code** in this repo was written during the hackathon event
 | Vitest | MIT | Tests |
 | reqwest, serde, tokio (Rust) | MIT/Apache | Rust client |
 
-Public **data APIs** (read-only, no SDK required): Binance, OKX, Kraken, Coinbase, Jupiter Price API, Drift stats API, Jupiter Perps API, Solana public RPC.
+Public **data APIs** (read-only, no SDK required): Binance, OKX, Kraken, Coinbase, Jupiter Price API v3, Drift stats API, Jupiter Perps API, Solana public RPC.
 
 ## Limits
 
