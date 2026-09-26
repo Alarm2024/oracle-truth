@@ -83,6 +83,135 @@ describe("evaluateGate unit checks", () => {
   });
 });
 
+const NOW = new Date("2026-09-25T12:00:00.000Z");
+
+function measuredInput(): GateInput {
+  return {
+    asset: "SOL",
+    now: NOW,
+    venuePrices: [
+      { venue: "binance", price: 145.5, timestamp: NOW.toISOString() },
+      { venue: "okx", price: 145.6, timestamp: NOW.toISOString() },
+    ],
+    perpSnapshots: [
+      {
+        source: "drift",
+        markPrice: 145.55,
+        oraclePrice: 145.54,
+        oracleAgeMs: 5_000,
+        fetchedAt: NOW.toISOString(),
+      },
+    ],
+    rpc: {
+      currentSlot: 300_000_010,
+      oracleSlot: 300_000_000,
+      slotLag: 10,
+      fetchedAt: NOW.toISOString(),
+    },
+  };
+}
+
+describe("evaluateGate fail closed", () => {
+  it("refuses DATA_UNKNOWN when every required measurement is UNKNOWN", () => {
+    const result = evaluateGate({
+      asset: "SOL",
+      now: NOW,
+      venuePrices: [{ venue: "binance", price: "UNKNOWN" }],
+      perpSnapshots: [],
+      rpc: {
+        currentSlot: "UNKNOWN",
+        oracleSlot: "UNKNOWN",
+        slotLag: "UNKNOWN",
+        fetchedAt: NOW.toISOString(),
+      },
+    });
+
+    expect(result.decision).toBe("refuse");
+    expect(result.reasonCode).toBe("DATA_UNKNOWN");
+    expect(result.evidence.missingFields).toEqual([
+      "rpc.slotLag",
+      "oracleAgeMs",
+      "venueSpreadBps",
+      "divergenceBps",
+    ]);
+  });
+
+  it.each([
+    {
+      field: "rpc.slotLag",
+      mutate: (input: GateInput) => {
+        input.rpc = { ...input.rpc!, slotLag: "UNKNOWN" };
+      },
+    },
+    {
+      field: "oracleAgeMs",
+      mutate: (input: GateInput) => {
+        input.perpSnapshots = [
+          {
+            ...input.perpSnapshots[0]!,
+            oracleUpdatedAt: undefined,
+            oracleAgeMs: "UNKNOWN",
+          },
+        ];
+      },
+    },
+    {
+      field: "venueSpreadBps",
+      mutate: (input: GateInput) => {
+        input.venuePrices = [
+          { venue: "binance", price: 145.55, timestamp: NOW.toISOString() },
+        ];
+      },
+    },
+    {
+      field: "divergenceBps",
+      mutate: (input: GateInput) => {
+        input.perpSnapshots = [
+          {
+            ...input.perpSnapshots[0]!,
+            markPrice: "UNKNOWN",
+            oraclePrice: "UNKNOWN",
+          },
+        ];
+      },
+    },
+  ])("refuses DATA_UNKNOWN when only $field is UNKNOWN", ({ field, mutate }) => {
+    const input = measuredInput();
+    mutate(input);
+    const result = evaluateGate(input);
+
+    expect(result.decision).toBe("refuse");
+    expect(result.reasonCode).toBe("DATA_UNKNOWN");
+    expect(result.evidence.missingFields).toEqual([field]);
+  });
+
+  it("allows when every required measurement is present and within thresholds", () => {
+    const result = evaluateGate(measuredInput());
+
+    expect(result.decision).toBe("allow");
+    expect(result.reasonCode).toBeUndefined();
+    expect(result.evidence.missingFields).toBeUndefined();
+  });
+
+  it("reports DATA_UNKNOWN rather than a specific code when another measurement is missing", () => {
+    const input = measuredInput();
+    input.rpc = { ...input.rpc!, slotLag: "UNKNOWN" };
+    input.perpSnapshots = [
+      {
+        ...input.perpSnapshots[0]!,
+        oracleUpdatedAt: undefined,
+        oracleAgeMs: 120_000,
+      },
+    ];
+
+    const result = evaluateGate(input);
+
+    expect(result.decision).toBe("refuse");
+    expect(result.reasonCode).toBe("DATA_UNKNOWN");
+    expect(result.evidence.missingFields).toEqual(["rpc.slotLag"]);
+  });
+});
+
 describe("buildResolutionEvidence", () => {
   it("resolves yes when all sources above strike", async () => {
     const { buildResolutionEvidence } = await import("../src/prediction/resolution.js");

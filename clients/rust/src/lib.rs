@@ -16,6 +16,7 @@ pub enum ReasonCode {
     DivergedXBps,
     RpcBehind,
     VenuesDisagree,
+    DataUnknown,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -54,6 +55,8 @@ pub struct GateEvidence {
     #[serde(default)]
     pub rpc: Option<serde_json::Value>,
     pub thresholds: serde_json::Value,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing_fields: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,6 +75,8 @@ pub struct ResolutionEvidence {
     pub asset: String,
     pub strike_price: f64,
     pub resolution_time: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observed_at: Option<String>,
     pub sources: Vec<serde_json::Value>,
     pub median_price: serde_json::Value,
     pub can_resolve: bool,
@@ -264,6 +269,28 @@ mod tests {
         let result: GateResult = serde_json::from_str(json).expect("parse");
         assert_eq!(result.decision, GateDecision::Refuse);
         assert_eq!(result.reason_code, Some(ReasonCode::OracleStale));
+    }
+
+    #[test]
+    fn parses_data_unknown_reason() {
+        let json = r#"{
+            "decision": "refuse",
+            "reasonCode": "DATA_UNKNOWN",
+            "evidence": {
+                "asset": "SOL",
+                "timestamp": "2026-09-25T12:00:00.000Z",
+                "spotReference": "UNKNOWN",
+                "venuePrices": [],
+                "thresholds": {},
+                "missingFields": ["rpc.slotLag", "oracleAgeMs", "venueSpreadBps", "divergenceBps"]
+            }
+        }"#;
+        let result: GateResult = serde_json::from_str(json).expect("parse");
+        assert_eq!(result.reason_code, Some(ReasonCode::DataUnknown));
+        assert_eq!(
+            result.evidence.missing_fields,
+            vec!["rpc.slotLag", "oracleAgeMs", "venueSpreadBps", "divergenceBps"]
+        );
     }
 
     #[test]

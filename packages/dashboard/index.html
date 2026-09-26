@@ -159,6 +159,7 @@
         <option value="diverged-oracle">Fixture: diverged-oracle</option>
         <option value="venues-disagree">Fixture: venues-disagree</option>
         <option value="rpc-behind">Fixture: rpc-behind</option>
+        <option value="data-unknown">Fixture: data-unknown</option>
       </select>
       <button id="resolve-btn">Check Prediction Resolution (SOL > strike)</button>
       <input id="strike-input" type="number" value="140" min="0" step="0.01"
@@ -264,6 +265,7 @@
             <tr><th>Oracle age</th><td>${fmt(ev.oracleAgeMs)} ms</td></tr>
             <tr><th>Venue spread</th><td>${fmt(ev.venueSpreadBps)} bps</td></tr>
             <tr><th>RPC slot lag</th><td>${fmt(ev.rpc?.slotLag)}</td></tr>
+            ${(ev.missingFields || []).length ? `<tr><th>Missing</th><td>${ev.missingFields.join(", ")}</td></tr>` : ""}
           </table>
           <details style="margin-top:.75rem;">
             <summary class="muted">Venue prices</summary>
@@ -275,22 +277,27 @@
         </article>`;
     }
 
-    async function fetchGate(asset) {
-      const fixture = fixtureSelect.value;
+    async function fetchGate(asset, fixture) {
       const qs = fixture ? `?mode=fixture&fixture=${fixture}` : "";
       const res = await fetch(`/api/gate/${asset}${qs}`);
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     }
 
+    let refreshGen = 0;
     async function refreshAll() {
+      const gen = ++refreshGen;
+      const fixture = fixtureSelect.value;
+      const modeLabel = fixture || "live";
       status.textContent = "Fetching gate status…";
       grid.innerHTML = "";
       try {
-        const results = await Promise.all(ASSETS.map(async (a) => [a, await fetchGate(a)]));
+        const results = await Promise.all(ASSETS.map(async (a) => [a, await fetchGate(a, fixture)]));
+        if (gen !== refreshGen) return;
         grid.innerHTML = results.map(([a, r]) => renderCard(a, r)).join("");
-        status.textContent = `Updated ${new Date().toLocaleTimeString()} — ${fixtureSelect.value || "live"} mode`;
+        status.textContent = `Updated ${new Date().toLocaleTimeString()} — ${modeLabel} mode`;
       } catch (e) {
+        if (gen !== refreshGen) return;
         status.innerHTML = `<span class="error">Error: ${e.message}</span>`;
       }
     }

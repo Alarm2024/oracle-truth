@@ -28,6 +28,10 @@ function oracleAgeMs(
   return Math.max(0, now.getTime() - updated);
 }
 
+function isMeasured(value: number | "UNKNOWN" | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 export function evaluateGate(input: GateInput): GateResult {
   const thresholds: GateThresholds = {
     ...DEFAULT_THRESHOLDS,
@@ -65,6 +69,17 @@ export function evaluateGate(input: GateInput): GateResult {
     rpc: input.rpc,
     thresholds,
   };
+
+  const missingFields: string[] = [];
+  if (!isMeasured(input.rpc?.slotLag)) missingFields.push("rpc.slotLag");
+  if (!isMeasured(age)) missingFields.push("oracleAgeMs");
+  if (!isMeasured(spread)) missingFields.push("venueSpreadBps");
+  if (!isMeasured(maxDiv)) missingFields.push("divergenceBps");
+
+  if (missingFields.length > 0) {
+    evidence.missingFields = missingFields;
+    return { decision: "refuse", reasonCode: "DATA_UNKNOWN", evidence };
+  }
 
   const checks: Array<{ code: ReasonCode; fail: boolean }> = [
     {
