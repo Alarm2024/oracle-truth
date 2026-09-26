@@ -27,6 +27,11 @@ const VENUE_SYMBOLS: Record<
   },
 };
 
+/** A usable quote is a finite number strictly above zero. */
+function usablePrice(price: number): number | "UNKNOWN" {
+  return Number.isFinite(price) && price > 0 ? price : "UNKNOWN";
+}
+
 async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T | "UNKNOWN"> {
   try {
     const controller = new AbortController();
@@ -51,7 +56,7 @@ export async function fetchBinanceSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = parseFloat(data.price);
   return {
     venue: "binance",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -67,7 +72,7 @@ export async function fetchOkxSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = parseFloat(data.data[0].last);
   return {
     venue: "okx",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -84,7 +89,7 @@ export async function fetchKrakenSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = entry?.c?.[0] ? parseFloat(entry.c[0]) : NaN;
   return {
     venue: "kraken",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -100,7 +105,7 @@ export async function fetchCoinbaseSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = data.price ? parseFloat(data.price) : NaN;
   return {
     venue: "coinbase",
-    price: Number.isFinite(price) ? price : "UNKNOWN",
+    price: usablePrice(price),
     timestamp: new Date().toISOString(),
   };
 }
@@ -120,7 +125,7 @@ export async function fetchJupiterSpot(asset: PerpAsset): Promise<VenuePrice> {
   const price = data[mint].usdPrice;
   return {
     venue: "jupiter",
-    price: typeof price === "number" && Number.isFinite(price) ? price : "UNKNOWN",
+    price: typeof price === "number" ? usablePrice(price) : "UNKNOWN",
     timestamp: new Date().toISOString(),
   };
 }

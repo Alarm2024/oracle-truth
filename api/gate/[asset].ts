@@ -4,7 +4,7 @@ import {
   runLiveGateCheck,
   type PerpAsset,
 } from "@oracle-truth/core";
-import { loadFixtureGate } from "../_lib/fixtures";
+import { isUnknownFixture, loadFixtureGate } from "../_lib/fixtures";
 import { handleOptions, queryString, setCors } from "../_lib/http";
 
 const ASSETS: PerpAsset[] = ["SOL", "BTC", "ETH"];
@@ -34,6 +34,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : await runLiveGateCheck(asset);
     res.status(200).json(result);
   } catch (err) {
+    if (isUnknownFixture(err)) {
+      res.status(400).json({ error: "unknown fixture" });
+      return;
+    }
     res.status(500).json({ error: String(err) });
   }
 }

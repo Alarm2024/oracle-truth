@@ -14,15 +14,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const asset = (queryString(req.query.asset, "SOL") ?? "SOL").toUpperCase() as PerpAsset;
-  const strike = Number(queryString(req.query.strike, "0"));
+  const strikeRaw = queryString(req.query.strike);
+  const strike = Number(strikeRaw);
   const time = queryString(req.query.time) ?? new Date().toISOString();
-  const question =
-    queryString(req.query.question) ?? `${asset} above $${strike} at ${time}?`;
 
-  if (!ASSETS.includes(asset) || !Number.isFinite(strike)) {
+  if (!ASSETS.includes(asset)) {
     res.status(400).json({ error: "Invalid asset or strike" });
     return;
   }
+
+  if (strikeRaw === undefined || !Number.isFinite(strike) || strike <= 0) {
+    res.status(400).json({ error: "strike required" });
+    return;
+  }
+
+  const question =
+    queryString(req.query.question) ?? `${asset} above $${strike} at ${time}?`;
 
   try {
     const evidence = await runLiveResolution({

@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "regions": ["fra1"],
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "buildCommand": "npm run build --workspace @oracle-truth/core",
   "outputDirectory": "packages/dashboard",
   "functions": {
