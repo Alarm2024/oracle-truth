@@ -27,6 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (
     strikeRaw === undefined ||
     !PLAIN_STRIKE.test(strikeRaw) ||
+    !Number.isFinite(Number(strikeRaw)) ||
     !(Number(strikeRaw) > 0)
   ) {
     res.status(400).json({ error: "strike required" });

@@ -45,7 +45,7 @@ function serveStatic(pathname: string, res: import("node:http").ServerResponse):
   return true;
 }
 
-const server = createServer(async (req, res) => {
+export const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);
 
   if (req.method === "OPTIONS") {
@@ -92,7 +92,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/prediction/resolve" && req.method === "GET") {
-    const asset = (url.searchParams.get("asset") ?? "SOL") as PerpAsset;
+    const asset = (url.searchParams.get("asset") ?? "SOL").toUpperCase() as PerpAsset;
     const strikeRaw = url.searchParams.get("strike") ?? undefined;
     const timeRaw = url.searchParams.get("time") ?? undefined;
     const plainStrike = /^\d+(\.\d+)?$/;
@@ -105,6 +105,7 @@ const server = createServer(async (req, res) => {
     if (
       strikeRaw === undefined ||
       !plainStrike.test(strikeRaw) ||
+      !Number.isFinite(Number(strikeRaw)) ||
       !(Number(strikeRaw) > 0)
     ) {
       json(res, 400, { error: "strike required" });

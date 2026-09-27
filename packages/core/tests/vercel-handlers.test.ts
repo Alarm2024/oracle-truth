@@ -108,6 +108,17 @@ describe("Vercel prediction resolve strike", () => {
     }
   );
 
+  it('returns 400 for a strike of "9" repeated 400 times', async () => {
+    const res = mockRes();
+    await resolveHandler(
+      mockReq({ asset: "SOL", strike: "9".repeat(400) }),
+      res as unknown as VercelResponse
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: "strike required" });
+  });
+
   it("accepts a plain decimal strike", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-26T12:00:00.000Z"));
