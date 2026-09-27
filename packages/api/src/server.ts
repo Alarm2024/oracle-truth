@@ -45,7 +45,7 @@ function serveStatic(pathname: string, res: import("node:http").ServerResponse):
   return true;
 }
 
-const server = createServer(async (req, res) => {
+export const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${port}`);
 
   if (req.method === "OPTIONS") {
@@ -74,7 +74,8 @@ const server = createServer(async (req, res) => {
           : await runLiveGateCheck(asset);
       json(res, 200, result);
     } catch (err) {
-      json(res, 500, { error: String(err) });
+      console.error(err);
+      json(res, 500, { error: "internal error" });
     }
     return;
   }
@@ -84,23 +85,50 @@ const server = createServer(async (req, res) => {
       const results = await Promise.all(ASSETS.map((a) => runLiveGateCheck(a)));
       json(res, 200, Object.fromEntries(ASSETS.map((a, i) => [a, results[i]])));
     } catch (err) {
-      json(res, 500, { error: String(err) });
+      console.error(err);
+      json(res, 500, { error: "internal error" });
     }
     return;
   }
 
   if (url.pathname === "/api/prediction/resolve" && req.method === "GET") {
-    const asset = (url.searchParams.get("asset") ?? "SOL") as PerpAsset;
-    const strike = Number(url.searchParams.get("strike") ?? "0");
-    const time = url.searchParams.get("time") ?? new Date().toISOString();
-    const question =
-      url.searchParams.get("question") ??
-      `${asset} above $${strike} at ${time}?`;
+    const asset = (url.searchParams.get("asset") ?? "SOL").toUpperCase() as PerpAsset;
+    const strikeRaw = url.searchParams.get("strike") ?? undefined;
+    const timeRaw = url.searchParams.get("time") ?? undefined;
+    const plainStrike = /^\d+(\.\d+)?$/;
 
-    if (!ASSETS.includes(asset) || !Number.isFinite(strike)) {
+    if (!ASSETS.includes(asset)) {
       json(res, 400, { error: "Invalid asset or strike" });
       return;
     }
+
+    if (
+      strikeRaw === undefined ||
+      !plainStrike.test(strikeRaw) ||
+      !Number.isFinite(Number(strikeRaw)) ||
+      !(Number(strikeRaw) > 0)
+    ) {
+      json(res, 400, { error: "strike required" });
+      return;
+    }
+    const strike = Number(strikeRaw);
+
+    const nowMs = Date.now();
+    let time: string;
+    if (timeRaw === undefined) {
+      time = new Date(nowMs).toISOString();
+    } else {
+      const parsed = Date.parse(timeRaw);
+      if (!Number.isFinite(parsed) || Math.abs(parsed - nowMs) > 60_000) {
+        json(res, 400, { error: "only current observations are supported" });
+        return;
+      }
+      time = timeRaw;
+    }
+
+    const question =
+      url.searchParams.get("question") ??
+      `${asset} above $${strike} at ${time}?`;
 
     try {
       const evidence = await runLiveResolution({
@@ -111,7 +139,8 @@ const server = createServer(async (req, res) => {
       });
       json(res, 200, evidence);
     } catch (err) {
-      json(res, 500, { error: String(err) });
+      console.error(err);
+      json(res, 500, { error: "internal error" });
     }
     return;
   }

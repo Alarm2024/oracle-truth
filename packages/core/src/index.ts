@@ -31,15 +31,16 @@ export async function runLiveResolution(
   input: Omit<ResolutionInput, "sources"> & { asset: PerpAsset }
 ): Promise<ResolutionEvidence> {
   const venues = await fetchAllSpotVenues(input.asset);
+  const observedAt = new Date().toISOString();
   const sources = venues.map((v) => ({
     source: v.venue,
     price: v.price,
-    fetchedAt: v.timestamp ?? new Date().toISOString(),
+    fetchedAt: v.timestamp ?? observedAt,
     raw: JSON.stringify(v),
     error: v.error,
   }));
 
-  return buildResolutionEvidence({ ...input, sources });
+  return { ...buildResolutionEvidence({ ...input, sources }), observedAt };
 }
 
 export { evaluateGate, buildResolutionEvidence };

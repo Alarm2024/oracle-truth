@@ -1,0 +1,21 @@
+{
+  "asset": "SOL",
+  "description": "Every required measurement is UNKNOWN — gate refuses",
+  "input": {
+    "asset": "SOL",
+    "venuePrices": [
+      { "venue": "binance", "price": "UNKNOWN", "timestamp": "2026-09-25T12:00:00.000Z" }
+    ],
+    "perpSnapshots": [],
+    "rpc": {
+      "currentSlot": "UNKNOWN",
+      "oracleSlot": "UNKNOWN",
+      "slotLag": "UNKNOWN",
+      "fetchedAt": "2026-09-25T12:00:00.000Z"
+    }
+  },
+  "expected": {
+    "decision": "refuse",
+    "reasonCode": "DATA_UNKNOWN"
+  }
+}

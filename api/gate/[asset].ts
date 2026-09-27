@@ -38,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(400).json({ error: "unknown fixture" });
       return;
     }
-    res.status(500).json({ error: String(err) });
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
   }
 }

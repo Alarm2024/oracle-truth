@@ -6,7 +6,8 @@ export type ReasonCode =
   | "ORACLE_STALE"
   | "DIVERGED_X_BPS"
   | "RPC_BEHIND"
-  | "VENUES_DISAGREE";
+  | "VENUES_DISAGREE"
+  | "DATA_UNKNOWN";
 
 export type GateDecision = "allow" | "refuse";
 
@@ -46,6 +47,8 @@ export interface GateEvidence {
   oracleAgeMs?: number | "UNKNOWN";
   rpc?: RpcSnapshot;
   thresholds: GateThresholds;
+  /** Required measurements that were UNKNOWN. Present on DATA_UNKNOWN refusals. */
+  missingFields?: string[];
   notes?: string[];
 }
 
@@ -87,6 +90,8 @@ export interface ResolutionEvidence {
   asset: PerpAsset;
   strikePrice: number;
   resolutionTime: string;
+  /** When live prices were fetched. Distinct from the requested resolutionTime. */
+  observedAt?: string;
   sources: ResolutionSourceRecord[];
   medianPrice: number | "UNKNOWN";
   agreeAboveStrike: boolean | "UNKNOWN";

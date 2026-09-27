@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-/** SHA-256 hash of canonical JSON for audit trail */
+/** SHA-256 hash of canonical JSON for decision record */
 export function hashPayload(payload: unknown): string {
   const canonical = JSON.stringify(payload, Object.keys(payload as object).sort());
   return createHash("sha256").update(canonical).digest("hex");
