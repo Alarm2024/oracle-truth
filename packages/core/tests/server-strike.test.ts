@@ -36,4 +36,14 @@ describe("local server prediction resolve strike", () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "strike required" });
   });
+
+  it("returns 400 for a strike of 9 repeated 400 times", async () => {
+    const port = listeningPort(server);
+    const res = await fetch(
+      `http://127.0.0.1:${port}/api/prediction/resolve?asset=SOL&strike=${"9".repeat(400)}`
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "strike required" });
+  });
 });
